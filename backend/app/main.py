@@ -208,3 +208,129 @@ def part3_stats():
         r["significant_fdr_0_05"] = bool(q < 0.05)
         prev_q = q
     return results
+
+@app.get("/api/v1/part4/summary")
+def part4_summary(
+    condition: str = "melanoma",
+    treatment: str = "miraclib",
+    sample_type: str = "PBMC",
+    time0: int = 0,
+):
+    """
+    Part 4: Data Subset Analysis
+
+    Cohort:
+      - indication = melanoma
+      - sample_type = PBMC
+      - treatment = miraclib
+      - time_from_treatment_start = 0 (baseline)
+
+    Returns:
+      - samples by project
+      - subjects by response (yes/no; excludes NULL/empty)
+      - subjects by gender (excludes NULL/empty)
+    """
+    import sqlite3
+    from .db import get_connection
+
+    conn = get_connection(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        sql = """
+        WITH baseline AS (
+            SELECT
+                sam.id AS sample_id,
+                sam.sample_code AS sample,
+                subj.id AS subject_id,
+                proj.name AS project,
+                tc.response AS response,
+                subj.sex AS sex
+            FROM samples sam
+            JOIN subjects subj ON subj.id = sam.subject_id
+            JOIN projects proj ON proj.id = subj.project_id
+            JOIN treatment_courses tc ON tc.id = sam.treatment_course_id
+            WHERE lower(subj.condition) = lower(:condition)
+              AND sam.sample_type = :sample_type
+              AND sam.time_from_treatment_start = :time0
+              AND lower(tc.treatment) = lower(:treatment)
+        ),
+        totals AS (
+            SELECT
+                COUNT(*) AS n_samples,
+                COUNT(DISTINCT subject_id) AS n_subjects
+            FROM baseline
+        ),
+        counts AS (
+            SELECT
+                'samples_by_project' AS section,
+                project AS key,
+                COUNT(*) AS n
+            FROM baseline
+            GROUP BY project
+
+            UNION ALL
+
+            SELECT
+                'subjects_by_response' AS section,
+                COALESCE(response, 'unknown') AS key,
+                COUNT(DISTINCT subject_id) AS n
+            FROM baseline
+            GROUP BY COALESCE(response, 'unknown')
+
+            UNION ALL
+
+            SELECT
+                'subjects_by_sex' AS section,
+                COALESCE(sex, 'unknown') AS key,
+                COUNT(DISTINCT subject_id) AS n
+            FROM baseline
+            GROUP BY COALESCE(sex, 'unknown')
+        )
+        SELECT
+            c.section,
+            c.key,
+            c.n,
+            t.n_samples,
+            t.n_subjects
+        FROM counts c
+        CROSS JOIN totals t
+        ORDER BY c.section, c.key;
+        """
+
+        params = {
+            "condition": condition,
+            "treatment": treatment,
+            "sample_type": sample_type,
+            "time0": time0,
+        }
+
+        rows = conn.execute(sql, params).fetchall()
+
+        # Build structured response
+        out = {
+            "filter": params,
+            "totals": {"n_samples": 0, "n_subjects": 0},
+            "samples_by_project": [],
+            "subjects_by_response": [],
+            "subjects_by_sex": [],
+        }
+
+        if rows:
+            out["totals"]["n_samples"] = int(rows[0]["n_samples"])
+            out["totals"]["n_subjects"] = int(rows[0]["n_subjects"])
+
+        buckets = {
+            "samples_by_project": "samples_by_project",
+            "subjects_by_response": "subjects_by_response",
+            "subjects_by_sex": "subjects_by_sex",
+        }
+
+        for r in rows:
+            section = r["section"]
+            out[buckets[section]].append(
+                {"key": r["key"], "n": int(r["n"])}
+            )
+
+        return out
+    finally:
+        conn.close()
