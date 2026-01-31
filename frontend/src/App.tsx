@@ -258,7 +258,7 @@ export default function App() {
           display: true,
           text: plotTitle(pop),
           color: "#E5E7EB",
-          font: { weight: "700", size: 14 },
+          font: { weight: 700, size: 14 },
         },
         tooltip: {
           enabled: true,
@@ -279,7 +279,7 @@ export default function App() {
             display: true,
             text: "Relative frequency (%)",
             color: "#E5E7EB",
-            font: { weight: "700" },
+            font: { weight: 700 },
           },
           ticks: { color: "#E5E7EB" },
           grid: { color: "rgba(255,255,255,0.08)" },
