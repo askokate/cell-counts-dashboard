@@ -1,0 +1,10 @@
+name: cell-counts-dashboard
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - uvicorn
+  - pip:
+      - fastapi
+      - python-multipart
