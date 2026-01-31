@@ -10,24 +10,15 @@ DB_PATH = str(Path(__file__).resolve().parents[1] / "data" / "app.db")
 # CORS
 cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
 
-if cors_origins:
-    # Production (Render): explicit allowlist from env var
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-else:
-    # Dev (Codespaces): allow Codespaces forwarded origins
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origin_regex=r"https://.*\.app\.github\.dev",
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,  # Production allowlist (e.g., Vercel). Can be empty.
+    allow_origin_regex=r"https://.*\.app\.github\.dev",  # Codespaces dev
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/")
 def root():
