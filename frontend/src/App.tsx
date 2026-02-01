@@ -41,6 +41,22 @@ type FrequencyRow = {
   percentage: number;
 };
 
+type MetaFilters = {
+  conditions: string[];
+  treatments: string[];
+  sample_types: string[];
+  time_from_treatment_start: number[];
+  responses: string[];
+  sexes: string[];
+};
+
+const DEFAULTS = {
+  condition: "melanoma",
+  treatment: "miraclib",
+  sample_type: "PBMC",
+  time0: 0,
+};
+
 type Part3Row = {
   sample: string;
   response: "yes" | "no";
@@ -168,20 +184,76 @@ export default function App() {
   }, [apiFreqUrl]);
 
   // ---------------- Part 3 state ----------------
+  const [meta, setMeta] = useState<MetaFilters | null>(null);
+  const [metaLoading, setMetaLoading] = useState(false);
+  const [metaError, setMetaError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMeta() {
+      setMetaLoading(true);
+      setMetaError(null);
+      try {
+        const res = await fetch("/api/v1/meta/filters");
+        if (!res.ok) throw new Error(`Meta API error: ${res.status} ${res.statusText}`);
+        const data = (await res.json()) as MetaFilters;
+
+        if (!cancelled) {
+          setMeta(data);
+
+          // If defaults aren’t present for some reason, fall back safely
+          if (!data.conditions.includes(DEFAULTS.condition) && data.conditions.length)
+            setCondition(data.conditions[0]);
+          if (!data.treatments.includes(DEFAULTS.treatment) && data.treatments.length)
+            setTreatment(data.treatments[0]);
+          if (!data.sample_types.includes(DEFAULTS.sample_type) && data.sample_types.length)
+            setSampleType(data.sample_types[0]);
+          if (!data.time_from_treatment_start.includes(DEFAULTS.time0) && data.time_from_treatment_start.length)
+            setTime0(data.time_from_treatment_start[0]);
+        }
+      } catch (e: any) {
+        if (!cancelled) setMetaError(e?.message ?? "Unknown meta load error");
+      } finally {
+        if (!cancelled) setMetaLoading(false);
+      }
+    }
+
+    loadMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+
+
+  const [condition, setCondition] = useState(DEFAULTS.condition);
+  const [treatment, setTreatment] = useState(DEFAULTS.treatment);
+  const [sampleType, setSampleType] = useState(DEFAULTS.sample_type);
+  const [time0, setTime0] = useState<number>(DEFAULTS.time0);
+
   const [p3Freq, setP3Freq] = useState<Part3Row[]>([]);
   const [p3Stats, setP3Stats] = useState<Part3StatRow[]>([]);
   const [p3Loading, setP3Loading] = useState(false);
   const [p3Error, setP3Error] = useState<string | null>(null);
 
-  const apiP3FreqUrl = `${API_BASE}/api/v1/part3/frequencies`;
-  const apiP3StatsUrl = `${API_BASE}/api/v1/part3/stats`;
+  const apiP3FreqUrl = `${API_BASE}/api/v1/part3/frequencies?condition=${condition}&treatment=${treatment}&sample_type=${sampleType}
+`;
+  const apiP3StatsUrl = `${API_BASE}/api/v1/part3/stats?condition=${condition}&treatment=${treatment}&sample_type=${sampleType}
+`;
 
   // ---------------- Part 4 state ----------------
   const [p4Summary, setP4Summary] = useState<Part4Summary | null>(null);
   const [p4Loading, setP4Loading] = useState(false);
   const [p4Error, setP4Error] = useState<string | null>(null);
 
-  const apiP4SummaryUrl = `${API_BASE}/api/v1/part4/summary`;
+  const part4Qs = new URLSearchParams({
+    condition,
+    treatment,
+    sample_type: sampleType,
+    time0: String(time0),
+  });
+  const apiP4SummaryUrl = `${API_BASE}/api/v1/part4/summary?${part4Qs.toString()}`;
+
 
 
   // Fetch Part 3 data once (or whenever API_BASE changes)
@@ -572,8 +644,7 @@ export default function App() {
       {activeTab === "analysis" && (
         <>
           <div style={{ marginBottom: 8, fontWeight: 700 }}>
-            Statistical Analysis — PBMC melanoma miraclib (responders vs
-            non-responders)
+            This tab allows you to compare the differences in cell population relative frequencies in Responders vs Non-Responders
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -593,6 +664,53 @@ export default function App() {
             <div style={{ color: "crimson" }}>Error: {p3Error}</div>
           ) : null}
 
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+            <strong>Filters:</strong>
+
+            <label>
+              Condition{" "}
+              <select
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+                disabled={!meta || metaLoading}
+              >
+                {(meta?.conditions ?? []).map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Treatment{" "}
+              <select
+                value={treatment}
+                onChange={(e) => setTreatment(e.target.value)}
+                disabled={!meta || metaLoading}
+              >
+                {(meta?.treatments ?? []).map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Sample type{" "}
+              <select
+                value={sampleType}
+                onChange={(e) => setSampleType(e.target.value)}
+                disabled={!meta || metaLoading}
+              >
+                {(meta?.sample_types ?? []).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+
+            {metaLoading ? <span>Loading filters…</span> : null}
+            {metaError ? <span style={{ color: "crimson" }}>Meta error: {metaError}</span> : null}
+          </div>
+
+
           {/* Stats table */}
           {!p3Loading && !p3Error && p3Stats.length > 0 ? (
             <div
@@ -607,25 +725,28 @@ export default function App() {
                 <thead>
                   <tr style={{ background: "#fafafa", color: "#111" }}>
                     <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>
-                      population
+                      Population
                     </th>
                     <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
-                      n_yes
+                      Responder (N)
                     </th>
                     <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
-                      n_no
+                      Non-Responder (N)
                     </th>
                     <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
-                      median_yes (%)
+                      Responder Median (%)
                     </th>
                     <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
-                      median_no (%)
+                      Non-Responder Median (%)
                     </th>
                     <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
-                      p_value
+                      P Value
                     </th>
                     <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
-                      q_value
+                      Q Value
+                    </th>
+                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                      Significantly Different
                     </th>
                   </tr>
                 </thead>
@@ -652,6 +773,9 @@ export default function App() {
                       </td>
                       <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
                         {s.q_value != null ? fmtP(s.q_value) : "NA"}
+                      </td>
+                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                        {s.significant_fdr_0_05 != null ? (s.significant_fdr_0_05 ? "Yes" : "No") : "NA"}
                       </td>
                     </tr>
                   ))}
@@ -708,7 +832,7 @@ export default function App() {
       {activeTab === "subset" && (
         <>
           <div style={{ marginBottom: 8, fontWeight: 700 }}>
-            Subset Analysis — melanoma PBMC baseline (time 0) treated with miraclib
+            This tab allows you to explore specific subsets of the data
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -717,6 +841,66 @@ export default function App() {
               {apiP4SummaryUrl}
             </a>
           </div>
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+            <strong>Filters:</strong>
+
+            <label>
+              Condition{" "}
+              <select
+                value={condition}
+                onChange={(e) => setCondition(e.target.value)}
+                disabled={!meta || metaLoading}
+              >
+                {(meta?.conditions ?? []).map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Treatment{" "}
+              <select
+                value={treatment}
+                onChange={(e) => setTreatment(e.target.value)}
+                disabled={!meta || metaLoading}
+              >
+                {(meta?.treatments ?? []).map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Sample type{" "}
+              <select
+                value={sampleType}
+                onChange={(e) => setSampleType(e.target.value)}
+                disabled={!meta || metaLoading}
+              >
+                {(meta?.sample_types ?? []).map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Time (days){" "}
+              <select
+                value={time0}
+                onChange={(e) => setTime0(Number(e.target.value))}
+                disabled={!meta || metaLoading}
+              >
+                {(meta?.time_from_treatment_start ?? []).map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </label>
+
+            {metaLoading ? <span>Loading filters…</span> : null}
+            {metaError ? <span style={{ color: "crimson" }}>Meta error: {metaError}</span> : null}
+          </div>
+
 
           {p4Loading ? <div>Loading subset summary…</div> : null}
           {p4Error ? (
@@ -778,10 +962,6 @@ export default function App() {
                     </tbody>
                   </table>
 
-                  <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
-                    This subset is intended to capture <b>baseline PBMC</b> measurements in melanoma
-                    patients treated with <b>miraclib</b>, for quick early-effect exploration.
-                  </div>
                 </div>
 
                 {/* Cohort size card */}
@@ -810,7 +990,7 @@ export default function App() {
                       }}
                     >
                       <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 6 }}>
-                        Samples (PBMC at baseline)
+                        Samples at baseline
                       </div>
                       <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 0.2 }}>
                         {fmtInt(p4Summary.totals.n_samples)}
@@ -834,8 +1014,8 @@ export default function App() {
                   </div>
 
                   <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
-                    If each subject contributes one baseline PBMC sample, <b>samples</b> and <b>subjects</b> should match.
-                    If they differ, it may indicate repeated baseline draws or multiple PBMC records per subject.
+                    If each subject contributes one baseline sample, <b>samples</b> and <b>subjects</b> should match.
+                    If they differ, it may indicate repeated baseline draws or multiple <b>sample type</b> records per subject.
                   </div>
                 </div>
               </div>

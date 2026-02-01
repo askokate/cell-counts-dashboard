@@ -74,12 +74,94 @@ def frequency(limit: int = 200):
     conn.close()
     return [dict(r) for r in rows]
 
+@app.get("/api/v1/meta/filters")
+def meta_filters():
+    """
+    Returns distinct filter values present in the DB so the frontend can build dropdowns.
+    """
+    import sqlite3
+    from .db import get_connection
+
+    conn = get_connection(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        def distinct_list(sql: str, params: dict | None = None) -> list[str]:
+            rows = conn.execute(sql, params or {}).fetchall()
+            vals = []
+            for r in rows:
+                v = r["v"]
+                if v is None:
+                    continue
+                v = str(v).strip()
+                if v == "":
+                    continue
+                vals.append(v)
+            return vals
+
+        conditions = distinct_list("""
+            SELECT DISTINCT condition AS v
+            FROM subjects
+            WHERE condition IS NOT NULL AND TRIM(condition) != ''
+            ORDER BY LOWER(condition)
+        """)
+
+        treatments = distinct_list("""
+            SELECT DISTINCT treatment AS v
+            FROM treatment_courses
+            WHERE treatment IS NOT NULL AND TRIM(treatment) != ''
+            ORDER BY LOWER(treatment)
+        """)
+
+        sample_types = distinct_list("""
+            SELECT DISTINCT sample_type AS v
+            FROM samples
+            WHERE sample_type IS NOT NULL AND TRIM(sample_type) != ''
+            ORDER BY LOWER(sample_type)
+        """)
+
+        timepoints = conn.execute("""
+            SELECT DISTINCT time_from_treatment_start AS v
+            FROM samples
+            WHERE time_from_treatment_start IS NOT NULL
+            ORDER BY time_from_treatment_start
+        """).fetchall()
+        time_from_treatment_start = [int(r["v"]) for r in timepoints]
+
+        responses = distinct_list("""
+            SELECT DISTINCT response AS v
+            FROM treatment_courses
+            WHERE response IN ('yes','no')
+            ORDER BY response
+        """)
+
+        sexes = distinct_list("""
+            SELECT DISTINCT sex AS v
+            FROM subjects
+            WHERE sex IS NOT NULL AND TRIM(sex) != ''
+            ORDER BY sex
+        """)
+
+        return {
+            "conditions": conditions,
+            "treatments": treatments,
+            "sample_types": sample_types,
+            "time_from_treatment_start": time_from_treatment_start,
+            "responses": responses,
+            "sexes": sexes,
+        }
+    finally:
+        conn.close()
+
 @app.get("/api/v1/part3/frequencies")
-def part3_frequencies():
+def part3_frequencies(
+    condition: str = "melanoma",
+    treatment: str = "miraclib",
+    sample_type: str = "PBMC",
+):
     """
     Part 3:
     Relative frequencies (%) per sample and population for
-    melanoma + miraclib + PBMC samples, split by response (yes/no).
+    condition+treatment+sample_type samples, split by response (yes/no).
     """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -95,9 +177,9 @@ def part3_frequencies():
         JOIN subjects subj ON subj.id = s.subject_id
         JOIN treatment_courses tc ON tc.id = s.treatment_course_id
         WHERE
-            LOWER(subj.condition) = 'melanoma'
-            AND LOWER(tc.treatment) = 'miraclib'
-            AND LOWER(s.sample_type) = 'pbmc'
+            LOWER(subj.condition) = LOWER(:condition)
+            AND LOWER(tc.treatment) = LOWER(:treatment)
+            AND LOWER(s.sample_type) = LOWER(:sample_type)
             AND tc.response IN ('yes', 'no')
     ),
     totals AS (
@@ -121,15 +203,25 @@ def part3_frequencies():
     )
     SELECT *
     FROM freqs
-    ORDER BY population, response;
+    ORDER BY population, response, sample;
     """
 
-    rows = cur.execute(query).fetchall()
+    params = {
+        "condition": condition.strip(),
+        "treatment": treatment.strip(),
+        "sample_type": sample_type.strip(),
+    }
+
+    rows = cur.execute(query, params).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 @app.get("/api/v1/part3/stats")
-def part3_stats():
+def part3_stats(
+    condition: str = "melanoma",
+    treatment: str = "miraclib",
+    sample_type: str = "PBMC",
+):
     """
     Part 3:
     Statistical comparison (responders vs non-responders)
@@ -148,9 +240,9 @@ def part3_stats():
         JOIN subjects subj ON subj.id = s.subject_id
         JOIN treatment_courses tc ON tc.id = s.treatment_course_id
         WHERE
-            LOWER(subj.condition) = 'melanoma'
-            AND LOWER(tc.treatment) = 'miraclib'
-            AND LOWER(s.sample_type) = 'pbmc'
+            LOWER(subj.condition) = LOWER(:condition)
+            AND LOWER(tc.treatment) = LOWER(:treatment)
+            AND LOWER(s.sample_type) = LOWER(:sample_type)
             AND tc.response IN ('yes', 'no')
     ),
     totals AS (
@@ -171,7 +263,13 @@ def part3_stats():
     JOIN populations p ON p.id = cc.population_id;
     """
 
-    rows = cur.execute(query).fetchall()
+    params = {
+        "condition": condition.strip(),
+        "treatment": treatment.strip(),
+        "sample_type": sample_type.strip(),
+    }
+
+    rows = cur.execute(query, params).fetchall()
     conn.close()
 
     values = defaultdict(lambda: {"yes": [], "no": []})
@@ -194,20 +292,27 @@ def part3_stats():
             "u_statistic": round(float(stat), 3),
             "p_value": float(pval),
             "significant_p_lt_0_05": bool(pval < 0.05),
-            # q_value and FDR significance will be added after sorting
         })
 
     results.sort(key=lambda r: r["p_value"])
-    # Benjamini–Hochberg FDR correction (q-values)
     m = len(results)
-    prev_q = 1.0
-    for i, r in enumerate(results, start=1):
-        p = r["p_value"]
-        q = min(prev_q, p * m / i)  # enforce monotonicity
+
+    # 1) raw BH adjusted p-values
+    raw = [r["p_value"] * m / (i + 1) for i, r in enumerate(results)]
+
+    # 2) enforce monotonicity the correct way (from the end)
+    qvals = [0.0] * m
+    prev = 1.0
+    for i in range(m - 1, -1, -1):
+        prev = min(prev, raw[i])
+        qvals[i] = prev
+
+    # 3) attach q-values
+    for r, q in zip(results, qvals):
         r["q_value"] = float(q)
         r["significant_fdr_0_05"] = bool(q < 0.05)
-        prev_q = q
     return results
+
 
 @app.get("/api/v1/part4/summary")
 def part4_summary(

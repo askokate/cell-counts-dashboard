@@ -1,93 +1,65 @@
-# =========================
-# Configuration
-# =========================
+SHELL := /usr/bin/bash
+.ONESHELL:
 
 ENV_NAME := cell-counts-dashboard
-PYTHON := micromamba run -n $(ENV_NAME) python
-PIP := micromamba run -n $(ENV_NAME) pip
-
 BACKEND_DIR := backend
 FRONTEND_DIR := frontend
 DB_PATH := backend/data/app.db
-CSV_PATH := backend/data/cell-counts.csv
+CSV_PATH := data/cell-count.csv
 
-# =========================
-# Help
-# =========================
+define ACTIVATE
+eval "$$(micromamba shell hook --shell bash)" && micromamba activate $(ENV_NAME)
+endef
 
 .PHONY: help
 help:
-	@echo ""
-	@echo "Cell Counts Dashboard – Makefile"
-	@echo ""
-	@echo "Available targets:"
-	@echo ""
-	@echo "  make env           Create micromamba env and install backend deps"
-	@echo "  make db            Rebuild SQLite DB from CSV"
-	@echo "  make backend       Run FastAPI backend (localhost:8000)"
-	@echo "  make frontend      Run Vite frontend (localhost:5173)"
-	@echo "  make test          Run backend tests"
-	@echo "  make dev           Run backend + frontend instructions"
-	@echo ""
+	@echo "Targets:"
+	@echo "  make env-create       Create micromamba env from backend/environment.yml"
+	@echo "  make backend-install  Install backend deps (pip)"
+	@echo "  make load-db          Build SQLite DB from CSV"
+	@echo "  make backend-dev      Run FastAPI locally (port 8000)"
+	@echo "  make test             Run pytest"
+	@echo "  make frontend-install Install frontend deps"
+	@echo "  make frontend-dev     Run Vite dev server (port 5173)"
 
-# =========================
-# Environment
-# =========================
+.PHONY: env-create
+env-create:
+	cd $(BACKEND_DIR)
+	eval "$$(micromamba shell hook --shell bash)"
+	micromamba env create -n $(ENV_NAME) -f environment.yml || true
+	micromamba activate $(ENV_NAME)
+	python -m pip install -r requirements.txt
 
-.PHONY: env
-env:
-	micromamba create -y -n $(ENV_NAME) python=3.11
-	$(PIP) install -r $(BACKEND_DIR)/requirements.txt
-	$(PIP) install pytest httpx
+.PHONY: backend-install
+backend-install:
+	cd $(BACKEND_DIR)
+	$(ACTIVATE)
+	python -m pip install -r requirements.txt
 
-# =========================
-# Database
-# =========================
+.PHONY: load-db
+load-db:
+	cd $(BACKEND_DIR)
+	$(ACTIVATE)
+	python -m backend.app.load_db --csv ../$(CSV_PATH) --db ../$(DB_PATH) --replace
 
-.PHONY: db
-db:
-	$(PYTHON) -m backend.app.load_db \
-		--csv $(CSV_PATH) \
-		--db $(DB_PATH) \
-		--replace
-
-# =========================
-# Backend
-# =========================
-
-.PHONY: backend
-backend:
-	cd $(BACKEND_DIR) && \
-	micromamba run -n $(ENV_NAME) \
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# =========================
-# Frontend
-# =========================
-
-.PHONY: frontend
-frontend:
-	cd $(FRONTEND_DIR) && npm install && npm run dev -- --host 0.0.0.0
-
-# =========================
-# Tests
-# =========================
+.PHONY: backend-dev
+backend-dev:
+	cd $(BACKEND_DIR)
+	$(ACTIVATE)
+	./start.sh
 
 .PHONY: test
 test:
-	cd $(BACKEND_DIR) && \
-	micromamba run -n $(ENV_NAME) pytest -v
+	cd $(BACKEND_DIR)
+	$(ACTIVATE)
+	pytest -v
 
-# =========================
-# Dev helper
-# =========================
+.PHONY: frontend-install
+frontend-install:
+	cd $(FRONTEND_DIR)
+	npm install
 
-.PHONY: dev
-dev:
-	@echo ""
-	@echo "Run backend in one terminal:"
-	@echo "  make backend"
-	@echo ""
-	@echo "Run frontend in another terminal:"
-	@echo "  make frontend"
-	@echo ""
+.PHONY: frontend-dev
+frontend-dev:
+	cd $(FRONTEND_DIR)
+	npm run dev -- --host 0.0.0.0 --port 5173
