@@ -15,7 +15,7 @@ endef
 help:
 	@echo "Targets:"
 	@echo "  make env-create       Create micromamba env from backend/environment.yml"
-	@echo "  make backend-install  Install backend deps (pip)"
+	@echo "  make backend-install  Install/upgrade backend deps (pip -r requirements.txt)"
 	@echo "  make load-db          Build SQLite DB from CSV"
 	@echo "  make backend-dev      Run FastAPI locally (port 8000)"
 	@echo "  make test             Run pytest"
@@ -26,14 +26,15 @@ help:
 env-create:
 	cd $(BACKEND_DIR)
 	eval "$$(micromamba shell hook --shell bash)"
+	# Create env if it doesn't exist; do not fail if it already exists
 	micromamba env create -n $(ENV_NAME) -f environment.yml || true
-	micromamba activate $(ENV_NAME)
-	python -m pip install -r requirements.txt
+	$(MAKE) backend-install
 
 .PHONY: backend-install
 backend-install:
 	cd $(BACKEND_DIR)
 	$(ACTIVATE)
+	python -m pip install -U pip
 	python -m pip install -r requirements.txt
 
 .PHONY: load-db

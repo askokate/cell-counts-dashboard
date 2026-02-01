@@ -423,19 +423,6 @@ export default function App() {
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: 24 }}>
       <h1>Cell Counts Dashboard</h1>
 
-      {/* API info always visible */}
-      <div style={{ marginBottom: 12 }}>
-        <div>
-          API base: <code>{API_BASE}</code>
-        </div>
-        <div>
-          Health:{" "}
-          <a href={apiHealthUrl} target="_blank" rel="noreferrer">
-            {apiHealthUrl}
-          </a>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
         <button
@@ -462,14 +449,7 @@ export default function App() {
       {activeTab === "overview" && (
         <>
           <div style={{ marginBottom: 8, fontWeight: 700 }}>
-            Data Overview — Relative frequencies by sample/population
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            Frequency endpoint:{" "}
-            <a href={apiFreqUrl} target="_blank" rel="noreferrer">
-              {apiFreqUrl}
-            </a>
+            This tab displays a summary table of the relative frequency of each cell population within each sample
           </div>
 
           <div
@@ -644,20 +624,8 @@ export default function App() {
       {/* ---------------- TAB: Analysis (Part 3) ---------------- */}
       {activeTab === "analysis" && (
         <>
-          <div style={{ marginBottom: 8, fontWeight: 700 }}>
+          <div style={{ marginBottom: 12, fontWeight: 700 }}>
             This tab allows you to compare the differences in cell population relative frequencies in Responders vs Non-Responders
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            Frequencies:{" "}
-            <a href={apiP3FreqUrl} target="_blank" rel="noreferrer">
-              {apiP3FreqUrl}
-            </a>
-            <br />
-            Stats:{" "}
-            <a href={apiP3StatsUrl} target="_blank" rel="noreferrer">
-              {apiP3StatsUrl}
-            </a>
           </div>
 
           {p3Loading ? <div>Loading analysis…</div> : null}
@@ -665,7 +633,7 @@ export default function App() {
             <div style={{ color: "crimson" }}>Error: {p3Error}</div>
           ) : null}
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 26, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
             <strong>Filters:</strong>
 
             <label>
@@ -832,18 +800,11 @@ export default function App() {
       {/* ---------------- TAB: Subset Analysis (Part 4) ---------------- */}
       {activeTab === "subset" && (
         <>
-          <div style={{ marginBottom: 8, fontWeight: 700 }}>
-            This tab allows you to explore specific subsets of the data
+          <div style={{ marginBottom: 12, fontWeight: 700 }}>
+            This tab allows you to explore specific subset cohorts of the data
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            Part 4 endpoint:{" "}
-            <a href={apiP4SummaryUrl} target="_blank" rel="noreferrer">
-              {apiP4SummaryUrl}
-            </a>
-          </div>
-
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 26, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
             <strong>Filters:</strong>
 
             <label>
@@ -886,7 +847,7 @@ export default function App() {
             </label>
 
             <label>
-              Time (days){" "}
+              Time from treatment start (days){" "}
               <select
                 value={time0}
                 onChange={(e) => setTime0(Number(e.target.value))}
@@ -1015,7 +976,7 @@ export default function App() {
                   </div>
 
                   <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
-                    If each subject contributes one baseline sample, <b>samples</b> and <b>subjects</b> should match.
+                    Baseline stands for time from treatment start. If each subject contributes one baseline sample, <b>samples</b> and <b>subjects</b> should match.
                     If they differ, it may indicate repeated baseline draws or multiple <b>sample type</b> records per subject.
                   </div>
                 </div>
