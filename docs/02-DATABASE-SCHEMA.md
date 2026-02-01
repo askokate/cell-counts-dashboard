@@ -1,116 +1,166 @@
-# Database Schema & Data Model
+# Database Schema & Scaling Rationale
 
 ## Overview
-This project uses a **relational SQLite database** to store immune cell count data, metadata, and derived analytics.
+
+This project uses a **normalized relational database** to store immune cell-count data, clinical metadata, and derived analytical results.
+
 The schema is designed to:
-- Normalize repeated metadata (subjects, projects, populations)
-- Support efficient analytical queries
-- Scale to many projects and thousands of samples
+- Accurately model clinical trial concepts
+- Support analytical queries efficiently
+- Scale to large numbers of projects, subjects, and samples
+- Remain portable across database engines
 
-The database is materialized at load time from `cell-count.csv`.
-
----
-
-## Entity Relationship Diagram (Logical)
-
-```
-projects ──< subjects ──< treatment_courses ──< samples ──< cell_counts >── populations
-```
+SQLite is used for simplicity and reproducibility, but the schema is intentionally database-agnostic.
 
 ---
 
-## Tables
+## Conceptual Model
+
+The schema reflects the natural hierarchy of clinical data:
+
+```
+projects → subjects → treatment_courses → samples → cell_counts ← populations
+```
+
+Each table represents a real-world entity and avoids duplicated or denormalized data.
+
+---
+
+## Tables and Rationale
 
 ### `projects`
 Represents independent studies or cohorts.
 
-| Column | Type | Notes |
-|------|------|------|
-| id | INTEGER PK | Surrogate key |
-| name | TEXT | e.g. prj1, prj2 |
+| Column | Type | Description |
+|------|------|------------|
+| id | INTEGER (PK) | Surrogate primary key |
+| name | TEXT | Project identifier (e.g., prj1) |
+
+**Why this exists**  
+Separating projects allows the same subject identifiers to appear in multiple studies without collision.
 
 ---
 
 ### `subjects`
-One row per biological subject per project.
+One row per biological subject within a project.
 
-| Column | Type | Notes |
-|------|------|------|
-| id | INTEGER PK |
-| subject_code | TEXT | Subject identifier from CSV |
-| project_id | INTEGER FK → projects |
-| condition | TEXT | e.g. melanoma |
+| Column | Type | Description |
+|------|------|------------|
+| id | INTEGER (PK) |
+| subject_code | TEXT | Subject identifier from source data |
+| project_id | INTEGER (FK) | References `projects.id` |
+| condition | TEXT | Disease/condition (e.g., melanoma) |
 | age | INTEGER | Nullable |
 | sex | TEXT | M / F |
 
-**Design choice:** Subjects are scoped to projects, allowing the same subject code across projects.
+**Design choice**  
+Subjects are scoped to projects, reflecting how clinical studies are conducted and avoiding global assumptions about subject identity.
 
 ---
 
 ### `treatment_courses`
-Captures treatment + response per subject.
+Captures treatment assignment and response per subject.
 
-| Column | Type | Notes |
-|------|------|------|
-| id | INTEGER PK |
-| subject_id | INTEGER FK → subjects |
-| treatment | TEXT | e.g. miraclib |
+| Column | Type | Description |
+|------|------|------------|
+| id | INTEGER (PK) |
+| subject_id | INTEGER (FK) | References `subjects.id` |
+| treatment | TEXT | Treatment name |
 | response | TEXT | yes / no / NULL |
 
-**Design choice:** Response is attached to the treatment course, not the sample.
+**Design choice**  
+Response is associated with the treatment course, not the sample, since response is a clinical outcome rather than a measurement.
 
 ---
 
 ### `samples`
-One biological sample per timepoint.
+Represents individual biological samples collected over time.
 
-| Column | Type | Notes |
-|------|------|
-| id | INTEGER PK |
-| sample_code | TEXT | Unique sample ID |
-| subject_id | INTEGER FK |
-| treatment_course_id | INTEGER FK |
+| Column | Type | Description |
+|------|------|------------|
+| id | INTEGER (PK) |
+| sample_code | TEXT | Unique sample identifier |
+| subject_id | INTEGER (FK) | References `subjects.id` |
+| treatment_course_id | INTEGER (FK) | References `treatment_courses.id` |
 | sample_type | TEXT | PBMC / WB |
-| time_from_treatment_start | INTEGER | 0 = baseline |
+| time_from_treatment_start | INTEGER | Baseline = 0 |
+
+**Why this matters**  
+Separating samples enables longitudinal analysis and multiple sample types per subject.
 
 ---
 
 ### `populations`
-Dimension table for immune cell types.
+Dimension table for immune cell populations.
 
-| Column | Type |
-|------|------|
-| id | INTEGER PK |
-| name | TEXT | b_cell, cd4_t_cell, etc. |
+| Column | Type | Description |
+|------|------|------------|
+| id | INTEGER (PK) |
+| name | TEXT | Cell population name |
+
+**Design choice**  
+Populations are rows, not columns. This avoids schema changes when new populations are introduced.
 
 ---
 
 ### `cell_counts`
-Long-format fact table.
+Long-format fact table storing observed counts.
 
-| Column | Type | Notes |
-|------|------|
-| sample_id | INTEGER FK |
-| population_id | INTEGER FK |
-| count | INTEGER |
+| Column | Type | Description |
+|------|------|------------|
+| sample_id | INTEGER (FK) | References `samples.id` |
+| population_id | INTEGER (FK) | References `populations.id` |
+| count | INTEGER | Observed cell count |
 
-**Design choice:** Long format enables flexible aggregation and avoids schema changes when adding populations.
-
----
-
-## Why This Scales
-
-- Adding new projects requires **no schema change**
-- New populations are rows, not columns
-- Analytics are SQL-based (CTEs), not hardcoded
-- SQLite can be swapped for Postgres with minimal changes
+**Why long format**  
+Long-format storage enables:
+- Flexible aggregation
+- Efficient joins
+- Arbitrary population expansion
+- Cleaner statistical queries
 
 ---
 
-## Analytics Strategy
+## Analytical Query Strategy
 
-- Part 2: CTE-based aggregation for per-sample frequencies
-- Part 3: Statistical analysis using pre-aggregated percentages
-- Part 4: Subset queries using indexed joins and filters
+The schema is optimized for **read-heavy analytical workloads**.
 
-This schema supports **hundreds of projects and thousands of samples** without denormalization.
+Common patterns include:
+- Per-sample frequency calculations
+- Subset filtering by condition, treatment, sample type, and timepoint
+- Grouped summaries across projects or responses
+
+These are expressed using SQL CTEs for clarity and correctness.
+
+---
+
+## Scaling Considerations
+
+If the dataset grows to:
+- **Hundreds of projects**
+- **Thousands of subjects**
+- **Millions of samples**
+
+The system scales by:
+
+- Migrating SQLite → Postgres or DuckDB
+- Adding indexes on frequently filtered columns:
+  - `subjects.condition`
+  - `treatment_courses.treatment`
+  - `samples.sample_type`
+  - `samples.time_from_treatment_start`
+- Introducing materialized views for heavy analytics
+
+No schema redesign is required.
+
+---
+
+## Why This Schema Works
+
+This schema:
+- Matches real clinical data relationships
+- Avoids denormalization and duplication
+- Supports complex analytics without schema changes
+- Remains easy to reason about and audit
+
+It is intentionally designed to be **simple, explicit, and scalable**.
