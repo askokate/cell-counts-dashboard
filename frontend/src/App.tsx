@@ -454,10 +454,10 @@ export default function App() {
           <div
             style={{
               display: "flex",
-              gap: 12,
+              gap: 26,
               alignItems: "center",
               flexWrap: "wrap",
-              marginBottom: 12,
+              marginBottom: 16,
             }}
           >
             <label>
@@ -508,7 +508,7 @@ export default function App() {
                 <tr style={{ background: "#fafafa", color: "#111" }}>
                   <th
                     style={{
-                      textAlign: "left",
+                      textAlign: "center",
                       padding: 10,
                       borderBottom: "1px solid #eee",
                       fontWeight: 700,
@@ -518,7 +518,7 @@ export default function App() {
                   </th>
                   <th
                     style={{
-                      textAlign: "right",
+                      textAlign: "center",
                       padding: 10,
                       borderBottom: "1px solid #eee",
                       fontWeight: 700,
@@ -528,7 +528,7 @@ export default function App() {
                   </th>
                   <th
                     style={{
-                      textAlign: "left",
+                      textAlign: "center",
                       padding: 10,
                       borderBottom: "1px solid #eee",
                       fontWeight: 700,
@@ -538,7 +538,7 @@ export default function App() {
                   </th>
                   <th
                     style={{
-                      textAlign: "right",
+                      textAlign: "center",
                       padding: 10,
                       borderBottom: "1px solid #eee",
                       fontWeight: 700,
@@ -548,7 +548,7 @@ export default function App() {
                   </th>
                   <th
                     style={{
-                      textAlign: "right",
+                      textAlign: "center",
                       padding: 10,
                       borderBottom: "1px solid #eee",
                       fontWeight: 700,
@@ -572,7 +572,7 @@ export default function App() {
                     <td
                       style={{
                         padding: 10,
-                        textAlign: "right",
+                        textAlign: "center",
                         borderBottom: "1px solid #f2f2f2",
                       }}
                     >
@@ -589,7 +589,7 @@ export default function App() {
                     <td
                       style={{
                         padding: 10,
-                        textAlign: "right",
+                        textAlign: "center",
                         borderBottom: "1px solid #f2f2f2",
                       }}
                     >
@@ -598,7 +598,7 @@ export default function App() {
                     <td
                       style={{
                         padding: 10,
-                        textAlign: "right",
+                        textAlign: "center",
                         borderBottom: "1px solid #f2f2f2",
                       }}
                     >
@@ -692,28 +692,28 @@ export default function App() {
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "#fafafa", color: "#111" }}>
-                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       Population
                     </th>
-                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       Responder (N)
                     </th>
-                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       Non-Responder (N)
                     </th>
-                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       Responder Median (%)
                     </th>
-                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       Non-Responder Median (%)
                     </th>
-                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       P Value
                     </th>
-                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       Q Value
                     </th>
-                    <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #eee" }}>
+                    <th style={{ textAlign: "center", padding: 10, borderBottom: "1px solid #eee" }}>
                       Significantly Different
                     </th>
                   </tr>
@@ -724,25 +724,25 @@ export default function App() {
                       <td style={{ padding: 10, borderBottom: "1px solid #f2f2f2" }}>
                         {s.population}
                       </td>
-                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                      <td style={{ padding: 10, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>
                         {fmtInt(s.n_yes)}
                       </td>
-                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                      <td style={{ padding: 10, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>
                         {fmtInt(s.n_no)}
                       </td>
-                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                      <td style={{ padding: 10, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>
                         {s.median_yes.toFixed(3)}
                       </td>
-                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                      <td style={{ padding: 10, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>
                         {s.median_no.toFixed(3)}
                       </td>
-                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                      <td style={{ padding: 10, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>
                         {fmtP(s.p_value)}
                       </td>
-                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                      <td style={{ padding: 10, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>
                         {s.q_value != null ? fmtP(s.q_value) : "NA"}
                       </td>
-                      <td style={{ padding: 10, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>
+                      <td style={{ padding: 10, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>
                         {s.significant_fdr_0_05 != null ? (s.significant_fdr_0_05 ? "Yes" : "No") : "NA"}
                       </td>
                     </tr>
@@ -989,15 +989,15 @@ export default function App() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: "left", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Project</th>
-                        <th style={{ textAlign: "right", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Samples</th>
+                        <th style={{ textAlign: "center", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Project</th>
+                        <th style={{ textAlign: "center", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Samples</th>
                       </tr>
                     </thead>
                     <tbody>
                       {p4Summary.samples_by_project.map((r) => (
                         <tr key={r.key}>
                           <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{r.key}</td>
-                          <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
+                          <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1009,15 +1009,15 @@ export default function App() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: "left", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Responder</th>
-                        <th style={{ textAlign: "right", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Subjects</th>
+                        <th style={{ textAlign: "center", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Responder</th>
+                        <th style={{ textAlign: "center", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Subjects</th>
                       </tr>
                     </thead>
                     <tbody>
                       {p4Summary.subjects_by_response.map((r) => (
                         <tr key={r.key}>
                           <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{r.key}</td>
-                          <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
+                          <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1029,15 +1029,15 @@ export default function App() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr>
-                        <th style={{ textAlign: "left", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Sex</th>
-                        <th style={{ textAlign: "right", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Subjects</th>
+                        <th style={{ textAlign: "center", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Sex</th>
+                        <th style={{ textAlign: "center", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Subjects</th>
                       </tr>
                     </thead>
                     <tbody>
                       {p4Summary.subjects_by_sex.map((r) => (
                         <tr key={r.key}>
                           <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{r.key}</td>
-                          <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
+                          <td style={{ padding: 8, textAlign: "center", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
                         </tr>
                       ))}
                     </tbody>
