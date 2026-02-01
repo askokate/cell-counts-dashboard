@@ -61,6 +61,29 @@ type Part3StatRow = {
   significant_fdr_0_05?: boolean;
 };
 
+// ---------------- Part 4 types ----------------
+type Part4KV = {
+  key: string;
+  n: number;
+};
+
+type Part4Summary = {
+  filter: {
+    condition: string;
+    treatment: string;
+    sample_type: string;
+    time0: number;
+  };
+  totals: {
+    n_samples: number;
+    n_subjects: number;
+  };
+  samples_by_project: Part4KV[];
+  subjects_by_response: Part4KV[];
+  subjects_by_sex: Part4KV[];
+};
+
+
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
 // ---------------- Format helpers ----------------
@@ -93,7 +116,7 @@ function pillStyle(active: boolean): React.CSSProperties {
 
 export default function App() {
   // ---------------- Tabs ----------------
-  const [activeTab, setActiveTab] = useState<"overview" | "analysis">(
+  const [activeTab, setActiveTab] = useState<"overview" | "analysis" | "subset">(
     "overview"
   );
 
@@ -153,6 +176,14 @@ export default function App() {
   const apiP3FreqUrl = `${API_BASE}/api/v1/part3/frequencies`;
   const apiP3StatsUrl = `${API_BASE}/api/v1/part3/stats`;
 
+  // ---------------- Part 4 state ----------------
+  const [p4Summary, setP4Summary] = useState<Part4Summary | null>(null);
+  const [p4Loading, setP4Loading] = useState(false);
+  const [p4Error, setP4Error] = useState<string | null>(null);
+
+  const apiP4SummaryUrl = `${API_BASE}/api/v1/part4/summary`;
+
+
   // Fetch Part 3 data once (or whenever API_BASE changes)
   useEffect(() => {
     let cancelled = false;
@@ -188,6 +219,34 @@ export default function App() {
       cancelled = true;
     };
   }, [apiP3FreqUrl, apiP3StatsUrl]);
+
+  // Fetch Part 4 summary
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPart4() {
+      setP4Loading(true);
+      setP4Error(null);
+      try {
+        const res = await fetch(apiP4SummaryUrl);
+        if (!res.ok) {
+          throw new Error(`Part4 summary error: ${res.status} ${res.statusText}`);
+        }
+        const data = (await res.json()) as Part4Summary;
+        if (!cancelled) setP4Summary(data);
+      } catch (e: any) {
+        if (!cancelled) setP4Error(e?.message ?? "Unknown error");
+      } finally {
+        if (!cancelled) setP4Loading(false);
+      }
+    }
+
+    loadPart4();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiP4SummaryUrl]);
+
 
   const populations = useMemo(
     () => ["b_cell", "cd4_t_cell", "cd8_t_cell", "nk_cell", "monocyte"],
@@ -316,7 +375,13 @@ export default function App() {
           onClick={() => setActiveTab("analysis")}
           style={pillStyle(activeTab === "analysis")}
         >
-          Analysis
+          Statistical Analysis
+        </button>
+        <button
+          onClick={() => setActiveTab("subset")}
+          style={pillStyle(activeTab === "subset")}
+        >
+          Subset Analysis
         </button>
       </div>
 
@@ -512,11 +577,6 @@ export default function App() {
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            Visual: boxplots of relative frequency (%) per immune population.
-            Each plot title includes <b>p</b> and <b>q</b> (FDR).
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
             Frequencies:{" "}
             <a href={apiP3FreqUrl} target="_blank" rel="noreferrer">
               {apiP3FreqUrl}
@@ -643,6 +703,211 @@ export default function App() {
           </div>
         </>
       )}
+
+      {/* ---------------- TAB: Subset Analysis (Part 4) ---------------- */}
+      {activeTab === "subset" && (
+        <>
+          <div style={{ marginBottom: 8, fontWeight: 700 }}>
+            Subset Analysis — melanoma PBMC baseline (time 0) treated with miraclib
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            Part 4 endpoint:{" "}
+            <a href={apiP4SummaryUrl} target="_blank" rel="noreferrer">
+              {apiP4SummaryUrl}
+            </a>
+          </div>
+
+          {p4Loading ? <div>Loading subset summary…</div> : null}
+          {p4Error ? (
+            <div style={{ color: "crimson", marginBottom: 12 }}>Error: {p4Error}</div>
+          ) : null}
+
+          {!p4Loading && !p4Error && p4Summary ? (
+            <>
+              {/* --- Cohort definition + totals (scientist-friendly layout) --- */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 16,
+                  marginBottom: 18,
+                }}
+              >
+                {/* Cohort definition card */}
+                <div
+                  style={{
+                    border: "1px solid #ddd",
+                    borderRadius: 10,
+                    padding: 14,
+                    background: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <div style={{ fontWeight: 800, marginBottom: 10 }}>Cohort definition</div>
+
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <tbody>
+                      {[
+                        ["Condition", p4Summary.filter.condition],
+                        ["Treatment", p4Summary.filter.treatment],
+                        ["Sample type", p4Summary.filter.sample_type],
+                        ["Baseline timepoint", `time_from_treatment_start = ${p4Summary.filter.time0}`],
+                      ].map(([k, v]) => (
+                        <tr key={k}>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              borderBottom: "1px solid rgba(255,255,255,0.10)",
+                              width: "45%",
+                              fontWeight: 700,
+                              opacity: 0.9,
+                            }}
+                          >
+                            {k}
+                          </td>
+                          <td
+                            style={{
+                              padding: "8px 10px",
+                              borderBottom: "1px solid rgba(255,255,255,0.10)",
+                            }}
+                          >
+                            <span style={{ fontWeight: 700 }}>{v}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
+                    This subset is intended to capture <b>baseline PBMC</b> measurements in melanoma
+                    patients treated with <b>miraclib</b>, for quick early-effect exploration.
+                  </div>
+                </div>
+
+                {/* Cohort size card */}
+                <div
+                  style={{
+                    border: "1px solid #ddd",
+                    borderRadius: 10,
+                    padding: 14,
+                    background: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <div style={{ fontWeight: 800, marginBottom: 10 }}>Cohort size</div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        borderRadius: 10,
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 6 }}>
+                        Samples (PBMC at baseline)
+                      </div>
+                      <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 0.2 }}>
+                        {fmtInt(p4Summary.totals.n_samples)}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        border: "1px solid rgba(255,255,255,0.10)",
+                        borderRadius: 10,
+                        padding: 12,
+                      }}
+                    >
+                      <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 6 }}>
+                        Subjects
+                      </div>
+                      <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: 0.2 }}>
+                        {fmtInt(p4Summary.totals.n_subjects)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 10, fontSize: 12, opacity: 0.85, lineHeight: 1.35 }}>
+                    If each subject contributes one baseline PBMC sample, <b>samples</b> and <b>subjects</b> should match.
+                    If they differ, it may indicate repeated baseline draws or multiple PBMC records per subject.
+                  </div>
+                </div>
+              </div>
+
+
+              {/* Tables */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
+                <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Samples by project</div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: "left", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Project</th>
+                        <th style={{ textAlign: "right", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Samples</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {p4Summary.samples_by_project.map((r) => (
+                        <tr key={r.key}>
+                          <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{r.key}</td>
+                          <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Subjects by response</div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: "left", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Responder</th>
+                        <th style={{ textAlign: "right", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Subjects</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {p4Summary.subjects_by_response.map((r) => (
+                        <tr key={r.key}>
+                          <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{r.key}</td>
+                          <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 12 }}>
+                  <div style={{ fontWeight: 800, marginBottom: 8 }}>Subjects by sex</div>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: "left", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Sex</th>
+                        <th style={{ textAlign: "right", padding: 8, borderBottom: "2px solid #f2f2f2" }}>Subjects</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {p4Summary.subjects_by_sex.map((r) => (
+                        <tr key={r.key}>
+                          <td style={{ padding: 8, borderBottom: "1px solid #f2f2f2" }}>{r.key}</td>
+                          <td style={{ padding: 8, textAlign: "right", borderBottom: "1px solid #f2f2f2" }}>{fmtInt(r.n)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </>
+      )}
+
     </div>
   );
 }
