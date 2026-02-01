@@ -535,7 +535,7 @@ export default function App() {
                       fontWeight: 700,
                     }}
                   >
-                    sample
+                    Sample
                   </th>
                   <th
                     style={{
@@ -545,7 +545,7 @@ export default function App() {
                       fontWeight: 700,
                     }}
                   >
-                    total_count
+                    Total Count
                   </th>
                   <th
                     style={{
@@ -555,7 +555,7 @@ export default function App() {
                       fontWeight: 700,
                     }}
                   >
-                    population
+                    Population
                   </th>
                   <th
                     style={{
@@ -565,7 +565,7 @@ export default function App() {
                       fontWeight: 700,
                     }}
                   >
-                    count
+                    Count
                   </th>
                   <th
                     style={{
@@ -575,7 +575,7 @@ export default function App() {
                       fontWeight: 700,
                     }}
                   >
-                    percentage
+                    Percentage
                   </th>
                 </tr>
               </thead>
