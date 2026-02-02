@@ -28,22 +28,25 @@ This repository includes:
 
 ---
 
-## Repository Structure
+## Code Structure & Design Rationale
 
-```
-cell-counts-dashboard/
-├── backend/
-├── frontend/
-├── data/
-├── docs/
-├── Makefile
-├── requirements.txt
-└── README.md
-```
-Start here, then refer to the detailed docs:
+The repository is organized by responsibility to keep data, analytics, and presentation concerns clearly separated:
 
-- **System Design:** `docs/01-SYSTEM-DESIGN.md`
-- **Database schema:** `docs/02-DATABASE-SCHEMA.md`
+- `backend/`  
+  Contains the FastAPI application, SQL-based analytics, and the SQLite database loader.  
+  Analytical logic lives server-side to ensure statistical correctness, reproducibility, and auditability.
+
+- `frontend/`  
+  A React + TypeScript dashboard built with Vite.  
+  The UI is intentionally thin: it renders tables and plots from backend responses without performing client-side statistics.
+
+- `data/`  
+  Raw input CSV used to materialize the analytics database.
+
+- `docs/`  
+  Design and schema rationale (`01-SYSTEM-DESIGN.md`, `02-DATABASE-SCHEMA.md`) explaining architectural and data modeling decisions.
+
+This structure mirrors real analytical systems, making the code easy to reason about, review, and extend while avoiding unnecessary abstraction.
 
 ---
 
@@ -162,6 +165,14 @@ pytest -v
 
 ---
 
+## Notes on hosting choices (Render + Vercel)
+
+- **Backend on Render:** simple Python web service hosting for FastAPI; supports free tier and GitHub-based deploys.
+- **Frontend on Vercel:** fast static hosting optimized for Vite/React; simple GitHub deploys and previews.
+- **Cold start warning:** both free tiers may “sleep” after inactivity, so the first request can be slower.
+
+---
+
 ## Summary
 
 This submission demonstrates:
@@ -172,3 +183,9 @@ This submission demonstrates:
 - A production-style interactive dashboard backed by tested APIs
 
 The system prioritizes **clarity, correctness, and reviewability** over unnecessary abstraction.
+
+---
+
+## License
+
+This repository is intended as a take-home / demonstration project.
