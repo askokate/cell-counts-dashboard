@@ -21,8 +21,6 @@ Raw CSV → Relational DB → Analytics API → Interactive Dashboard
 A normalized relational schema models projects, subjects, treatments, samples, and cell populations.  
 The database is materialized once and treated as read-only during analysis.
 
-SQLite is used for simplicity, with a clean migration path to Postgres or DuckDB.
-
 ---
 
 ## Analytics Layer
