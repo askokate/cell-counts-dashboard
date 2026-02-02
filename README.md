@@ -46,7 +46,7 @@ The repository is organized by responsibility to keep data, analytics, and prese
 - `docs/`  
   Design and schema rationale (`01-SYSTEM-DESIGN.md`, `02-DATABASE-SCHEMA.md`) explaining architectural and data modeling decisions.
 
-This structure mirrors real analytical systems, making the code easy to reason about, review, and extend while avoiding unnecessary abstraction.
+This structure mirrors real analytical systems, making the code easy to reason about, review, and extend.
 
 ---
 
@@ -149,8 +149,6 @@ npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Note: try opening/forwarding **port 5173** to view the dashboard in case of errors.
-
 ---
 
 ## Running Tests (Optional)
@@ -182,7 +180,7 @@ This submission demonstrates:
 - Reproducible, auditable analytical workflows
 - A production-style interactive dashboard backed by tested APIs
 
-The system prioritizes **clarity, correctness, and reviewability** over unnecessary abstraction.
+The system prioritizes **clarity, correctness, and reviewability**.
 
 ---
 
