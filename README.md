@@ -111,7 +111,7 @@ python -m app.load_db   --csv ../data/cell-count.csv   --db data/app.db   --repl
 ./start.sh
 ```
 
-Verify:
+Verify in another terminal:
 
 ```bash
 curl http://localhost:8000/api/v1/health
@@ -142,13 +142,13 @@ npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Open/forward **port 5173** to view the dashboard.
+Note: try opening/forwarding **port 5173** to view the dashboard in case of errors.
 
 ---
 
 ## Running Tests (Optional)
 
-From the repo root:
+From the repo root in another terminal:
 
 ```bash
 cd backend
