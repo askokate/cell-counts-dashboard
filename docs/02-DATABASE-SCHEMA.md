@@ -77,7 +77,7 @@ Represents an independent study or cohort.
 - `id` (PK) – surrogate key
 - `name` – project identifier (e.g., `prj1`)
 
-**Rationale**
+**Rationale** : 
 Projects are a natural top-level unit for analysis and allow future expansion to hundreds of studies without changing downstream tables.
 
 ---
@@ -99,7 +99,7 @@ One row per biological subject **within a project**.
 - `age` (nullable)
 - `sex`
 
-**Rationale**
+**Rationale** : 
 Scoping subjects to projects mirrors how studies work in practice and avoids assuming subject IDs are globally unique across studies.
 
 ---
@@ -119,7 +119,7 @@ Captures treatment assignment and response per subject.
 - `treatment`
 - `response` (e.g., yes/no/NULL)
 
-**Rationale**
+**Rationale** : 
 Clinical response is an outcome associated with a treatment course, while samples are measurement timepoints collected during (or after) that course.
 
 ---
@@ -142,7 +142,7 @@ Represents individual biological samples collected over time.
 - `sample_type` (PBMC/WB)
 - `time_from_treatment_start` (baseline = 0)
 
-**Rationale**
+**Rationale** : 
 It supports longitudinal analysis (multiple timepoints) and multiple sample types per subject without duplicating metadata.
 
 ---
@@ -157,7 +157,7 @@ Reference list of immune cell population names.
 - `id` (PK)
 - `name` – population name
 
-**Rationale**
+**Rationale** : 
 This is a **dimension table**, as in a lookup/reference table that stores descriptive values (like population names) once, and other tables refer to it by ID.  
 Here, that means you can add new populations without changing the schema (no new columns needed).
 
@@ -179,7 +179,7 @@ Stores observed counts in long format: one row per (sample, population).
 - `population_id` (FK)
 - `count`
 
-**Rationale**
+**Rationale** : 
 Long format keeps the schema stable as populations grow from dozens to hundreds. It also makes aggregation and filtering consistent in SQL.
 
 ---
