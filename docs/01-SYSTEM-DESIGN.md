@@ -95,7 +95,7 @@ In a production scenario, the same interfaces naturally extend to:
 
 ---
 
-## Backend API endpoints (overview)
+## Backend API endpoints
 
 The backend exposes a small set of read-only analytical endpoints.  
 Each endpoint maps to a specific analytical question and returns analysis-ready JSON consumed by the dashboard.
@@ -135,7 +135,7 @@ See `docs/02-DATABASE-SCHEMA.md` for the full schema and rationale.
 
 ## Dashboard design
 
-The dashboard is interactive, but intentionally constrained:
+The dashboard is interactive:
 - Filters map to concrete cohort definitions (condition, treatment, sample type, etc.)
 - Tables are shown alongside plots for numerical transparency
 - The UI focuses on presentation; computed values come from the API
