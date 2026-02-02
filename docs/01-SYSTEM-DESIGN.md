@@ -11,7 +11,7 @@ Design priorities:
 
 ---
 
-## System diagram (detailed ASCII)
+## System diagram
 
 ```
                                    ┌──────────────────────────────────────────┐
@@ -25,7 +25,7 @@ Design priorities:
                           │                 Frontend (React + Vite)                  │
                           │  Host: Vercel (static build + CDN)                       │
                           │  - Renders tables and boxplots                           │
-                          │  - Minimal client-side math                              │
+                          │  - No client-side math                              │
                           │  - Calls backend APIs for computed results               │
                           │  Runtime (local/dev): http://localhost:5173             │
                           └──────────────────────────┬───────────────────────────────┘
@@ -76,7 +76,7 @@ In a production scenario, the same interfaces naturally extend to:
 
 ---
 
-## Technology stack (what runs where)
+## Technology stack
 
 **Frontend**
 - React + TypeScript + Vite
@@ -92,6 +92,38 @@ In a production scenario, the same interfaces naturally extend to:
 - SQLite file database used as an analytics store
 - Materialized from `cell-count.csv` via a loader script
 - Schema is portable to Postgres/DuckDB when scaling
+
+---
+
+## Backend API endpoints (overview)
+
+The backend exposes a small set of read-only analytical endpoints.  
+Each endpoint maps to a specific analytical question and returns analysis-ready JSON consumed by the dashboard.
+
+- **GET `/api/v1/health`**  
+  Health check endpoint used to verify that the backend service is running.
+
+- **GET `/api/v1/meta/filters`**  
+  Returns available values for filters (projects, conditions, treatments, sample types, timepoints, populations).  
+  This allows the frontend to populate dropdowns without hardcoding domain values.
+
+- **GET `/api/v1/frequencies`**  
+  Computes per-sample and per-population frequencies based on cell counts.  
+  Supports query parameters for sample name.
+
+- **GET `/api/v1/part3/frequencies`**  
+  Computes relative frequencies (%) per sample and population, split by response (yes/no).  
+  Supports query parameters for condition, treatment and sample type.
+
+- **GET `/api/v1/part3/stats`**  
+  Compares distributions between cohorts (e.g., responder vs non-responder), including multiple-testing correction.  
+  Returns test statistics and adjusted p-values.
+
+- **GET `/api/v1/part4/summary`**  
+  Returns specific subset cohorts of the data to understand early treatment effects.
+  Supports query parameters for condition, treatment, sample type and time from treatment start (days).
+
+All analytical computation is performed server-side so that results are consistent across the dashboard and any future consumers of the API.
 
 ---
 
