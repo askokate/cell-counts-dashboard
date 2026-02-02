@@ -45,84 +45,115 @@ cell-counts-dashboard/
 
 ## How to Run the Project (GitHub Codespaces)
 
-This repo is designed to run in a fresh Codespace using the provided `Makefile` targets.
+The instructions below assume a **fresh GitHub Codespace**.
 
-> You’ll run the backend and frontend in two separate terminals.
+You will run the **backend and frontend in two separate terminals**.
 
-### Environment Manager (micromamba)
+---
 
-The backend uses **micromamba** to manage the Python environment.
+## Backend Setup (Python / FastAPI)
 
-- `micromamba` is **preinstalled in GitHub Codespaces**
-- No manual installation is required in the standard Codespaces environment
+### 1) Ensure micromamba is available
 
-If for any reason `micromamba` is not available, it can be installed with:
+GitHub Codespaces typically includes `micromamba` by default.
+
+Verify:
+
+```bash
+micromamba --version
+```
+
+If not available, install it:
 
 ```bash
 curl -Ls https://micro.mamba.pm/install.sh | bash
-source ~/.bashrc
 ```
+Then reload the shell.
 
-After installation, reload the shell before running any `make` commands.
+---
 
-### 0) Quick reference (Make targets)
+### 2) Create and activate the Python environment
 
 From the repo root:
 
 ```bash
-make help
+cd backend
+micromamba env create -n cell-counts-dashboard -f environment.yml || true
+micromamba activate cell-counts-dashboard
 ```
 
-### 1) Backend setup (Python env + dependencies)
+---
 
-In **Terminal 1** (repo root):
+### 3) Install backend dependencies
 
 ```bash
-make env-create
+pip install -U pip
+pip install -r requirements.txt
 ```
 
-This creates (or reuses) the `cell-counts-dashboard` micromamba environment and installs backend Python dependencies from `requirements.txt`.
+---
 
-### 2) (Optional) Rebuild the SQLite database from the CSV
+### 4) (Optional) Rebuild the SQLite database from CSV
 
-The repo includes a materialized DB at `backend/data/app.db`.
-If you want to regenerate it from `data/cell-count.csv`:
+The repository includes a prebuilt database at `backend/data/app.db`.
+
+To regenerate it from `data/cell-count.csv`:
 
 ```bash
-make load-db
+python -m app.load_db   --csv ../data/cell-count.csv   --db data/app.db   --replace
 ```
 
-### 3) Start the backend API (FastAPI)
+---
 
-In **Terminal 1**:
+### 5) Start the backend API
 
 ```bash
-make backend-dev
+./start.sh
 ```
 
 Verify:
 
 ```bash
-curl -s http://localhost:8000/api/v1/health
+curl http://localhost:8000/api/v1/health
 ```
 
-Open/forward **port 8000** if you want to hit the API from the browser.
+Forward **port 8000** if you want to access the API from the browser.
 
-### 4) Start the frontend dashboard (Vite + React)
+---
 
-In **Terminal 2** (repo root):
+## Frontend Setup (React / Vite)
+
+Open a **second Codespaces terminal**.
+
+### 6) Install frontend dependencies
+
+From the repo root:
 
 ```bash
-make frontend-install
-make frontend-dev
+cd frontend
+npm install
+```
+
+---
+
+### 7) Start the frontend dashboard
+
+```bash
+npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
 Open/forward **port 5173** to view the dashboard.
 
-### 5) Run tests (optional)
+---
+
+## Running Tests (Optional)
+
+From the repo root:
 
 ```bash
-make test
+cd backend
+micromamba activate cell-counts-dashboard
+pytest -v
 ```
 
 ---
