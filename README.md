@@ -28,7 +28,7 @@ This repository includes:
 
 ---
 
-## Code Structure & Design Rationale
+## Code Structure
 
 The repository is organized by responsibility to keep data, analytics, and presentation concerns clearly separated:
 
@@ -47,6 +47,12 @@ The repository is organized by responsibility to keep data, analytics, and prese
   Design and schema rationale (`01-SYSTEM-DESIGN.md`, `02-DATABASE-SCHEMA.md`) explaining architectural and data modeling decisions.
 
 This structure mirrors real analytical systems, making the code easy to reason about, review, and extend.
+
+---
+
+## Schema Design
+
+See `docs/02-DATABASE-SCHEMA.md` for the full schema and rationale.
 
 ---
 
