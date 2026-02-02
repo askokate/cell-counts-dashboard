@@ -40,6 +40,10 @@ cell-counts-dashboard/
 ├── requirements.txt
 └── README.md
 ```
+Start here, then refer to the detailed docs:
+
+- **System Design:** `docs/01-SYSTEM-DESIGN.md`
+- **Database schema:** `docs/02-DATABASE-SCHEMA.md`
 
 ---
 
