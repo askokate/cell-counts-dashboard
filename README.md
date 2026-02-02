@@ -60,6 +60,7 @@ If for any reason `micromamba` is not available, it can be installed with:
 
 ```bash
 curl -Ls https://micro.mamba.pm/install.sh | bash
+source ~/.bashrc
 ```
 
 After installation, reload the shell before running any `make` commands.
